@@ -1,105 +1,105 @@
 # l2k_gps3d
 
-3D GPS ribbon renderer focused on two route sources:
+2 種類のルートソースに対応した 3D GPS リボン描画リソースです。
 
-- `USER` = player waypoint
-- `MISSION` = active routed blip from another script
+- `USER` = プレイヤーのウェイポイント
+- `MISSION` = 他スクリプトが有効にしたルート付き blip
 
-`multi` stays disabled by default and is ignored when `Config.routeSources.multi = false`.
+`multi` はデフォルトで無効です。`Config.routeSources.multi = false` のときは無視されます。
 
-The geo animation module is now bundled inside this same resource. No separate `l2k_geoanim` dependency is required.
+ジオアニメーションモジュールは本リソースに同梱されています。別リソース `l2k_geoanim` は不要です。
 
-## Commands
+## コマンド
 
 - `/gps3d`
-  Toggle the 3D GPS on or off.
+  3D GPS の ON / OFF。
 
 - `/gps3d_route manual`
-  Force `USER` mode.
+  `USER` モードを強制する。
 
 - `/gps3d_route blip`
-  Force `MISSION` mode if a routed blip exists.
+  ルート付き blip がある場合に `MISSION` モードを強制する。
 
 - `/gps3d_route toggle`
-  Switch between `USER` and `MISSION`.
+  `USER` と `MISSION` を切り替える。
 
 - `/gps3d_route status`
-  Show current source, preset and route state.
+  現在のソース、プリセット、ルート状態を表示する。
 
 - `/gpspreset index|next|prev|status`
-  Change or inspect the current ribbon preset.
+  現在のリボンプリセットを変更または確認する。
 
 - `/gpscolordefault r g b [a]`
-  Set the `USER` route color.
+  `USER` ルートの色を設定する。
 
 - `/gpscolormission r g b [a]`
-  Set the `MISSION` route color.
+  `MISSION` ルートの色を設定する。
 
 - `/geoanim`
 - `/geoanim on`
 - `/geoanim shutdown`
 - `/geoanim off`
 - `/geoanim status`
-  Control the bundled AR animation module manually when needed.
+  必要に応じて同梱 AR アニメーションモジュールを手動制御する。
 
-## Shortcuts
+## ショートカット
 
-All shortcuts require an allowed vehicle and can be disabled in the config.
+すべて許可車両内でのみ有効です。config で無効化できます。
 
 - `SHIFT + UP`
-  Switch between `USER` and `MISSION`.
+  `USER` と `MISSION` を切り替える。
 - `SHIFT + E`
-  Cycle the color of the current route source.
+  現在のルートソースの色をサイクルする。
 - `SHIFT + LEFT / RIGHT`
-  Cycle the ribbon preset.
+  リボンプリセットをサイクルする。
 - `SHIFT + DOWN`
-  Toggle the 3D GPS with cooldown protection when re-enabling.
+  3D GPS を切り替える（再有効化時はクールダウン付き）。
 - `SHIFT + K`
-  Toggle extra geo animations used by GPS mode changes. This also resets the one-shot intro animation so it can be shown again later.
+  GPS モード変更用の追加ジオアニメーションを切り替える。ワンショットイントロをリセットし、後から再表示できる。
 
-## Presets
+## プリセット
 
-Presets only change the ribbon style:
+プリセットはリボンスタイルのみを変更します。
 
-- texture dictionary
-- texture name
+- テクスチャディクショナリ
+- テクスチャ名
 
-They do not overwrite the colors chosen for `USER` and `MISSION`.
+`USER` と `MISSION` に設定した色は上書きしません。
 
-## External Blip Capture
+## 外部 Blip の取得
 
-If another script already does:
+他スクリプトが既に次を実行している場合:
 
 ```lua
 local blip = AddBlipForCoord(x, y, z)
 SetBlipRoute(blip, true)
 ```
 
-`l2k_gps3d` can capture that route automatically when:
+次の設定が有効なら `l2k_gps3d` がそのルートを自動取得できます。
 
 ```lua
 Config.enableExternalBlipRouteCapture = true
 ```
 
-## Route Safety
+## ルート安全性
 
-`l2k_gps3d` is designed to be non-intrusive.
+`l2k_gps3d` は非侵襲的に設計されています。
 
-- It reads routes that already exist in the game.
-- It does not own external waypoint or mission route creation.
-- It does not clear external routed blips.
-- It does not refresh or rebuild another script's GPS logic.
-- It only decides which available route the 3D ribbon should follow.
+- ゲーム内に既に存在するルートを読み取るだけです。
+- 外部のウェイポイントやミッションルートの作成は所有しません。
+- 外部のルート付き blip は消しません。
+- 他スクリプトの GPS ロジックを更新・再構築しません。
+- 3D リボンがどの利用可能ルートを追うかだけを決定します。
 
-This means another resource can keep handling:
+つまり他リソースは次を引き続き担当できます。
 
 - `SetBlipRoute(blip, true)`
-- waypoint creation
-- mission flow
-- delivery flow
-- race checkpoints
+- ウェイポイント作成
+- ミッションフロー
+- 配送フロー
+- レースチェックポイント
 
-while `l2k_gps3d` only adds the 3D visual layer on top.
+`l2k_gps3d` はその上に 3D ビジュアルレイヤーを重ねるだけです。
 
 ## Exports
 
@@ -146,9 +146,9 @@ exports.l2k_gps3d:SetDefaultRouteColor(255, 255, 255, 205)
 exports.l2k_gps3d:SetMissionRouteColor(255, 214, 64, 215)
 ```
 
-### Bundled GeoAnim Exports
+### 同梱 GeoAnim Exports
 
-These are now exposed by the same `l2k_gps3d` resource:
+いずれも同一リソース `l2k_gps3d` から公開されます。
 
 ```lua
 exports.l2k_gps3d:PlayProfile('on', vehicle)
@@ -157,14 +157,14 @@ exports.l2k_gps3d:PlayProfile('off', vehicle)
 exports.l2k_gps3d:StopExtraAnimations()
 ```
 
-## Notes
+## 注意事項
 
-- External blip routes are not cleared by this resource.
-- Route commands and shortcuts affect only the 3D ribbon, colors, presets and bundled visual effects.
-- Boat and plane classes are ignored by default.
-- The ribbon uses speed-based sampling and distance limits for lighter runtime at high speed.
-- The first large GPS intro plays once, then later activations use a faster `on_fast` profile until you reset it with `SHIFT + K`.
+- 外部 blip ルートは本リソースではクリアしません。
+- ルート系コマンドとショートカットは 3D リボン・色・プリセット・同梱ビジュアル効果のみに影響します。
+- ボートと飛行機クラスはデフォルトで無視されます。
+- リボンは速度ベースのサンプリングと距離上限で、高速時の負荷を抑えます。
+- 初回の大型 GPS イントロは 1 回のみ再生され、以降の有効化では `on_fast` プロファイルを使用します。`SHIFT + K` でリセットできます。
 
-## Credit
+## クレジット
 
-If you use this resource as a base for your own project, please provide visible credit to the original project and author. It would be greatly appreciated.
+本リソースをベースに独自プロジェクトを作成する場合は、オリジナルプロジェクトおよび作者へのクレジットを目に見える形で記載してください。歓迎します。
