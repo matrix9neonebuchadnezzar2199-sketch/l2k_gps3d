@@ -10,6 +10,7 @@ version '1.2.0'
 shared_scripts {
     'config.lua',
     'locales/en.lua',
+    'locales/ja.lua',
     'locale.lua',
     'gpsgeoanim.config.lua'
 }
