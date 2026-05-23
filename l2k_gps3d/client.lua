@@ -102,6 +102,34 @@ local function notify(message)
     })
 end
 
+local function resolveModeHintText(localeKey, configKey)
+    local configValue = Config[configKey]
+    if type(configValue) == 'string' and configValue ~= '' then
+        return configValue
+    end
+    return L(localeKey)
+end
+
+local function formatAvailableSourcesForDisplay()
+    local sources = getAvailableRouteSources()
+    if type(sources) ~= 'table' or #sources == 0 then
+        return ''
+    end
+
+    local labels = {}
+    for _, key in ipairs(sources) do
+        if key == 'manual' then
+            labels[#labels + 1] = L('source.manual')
+        elseif key == 'blip' then
+            labels[#labels + 1] = L('source.blip')
+        else
+            labels[#labels + 1] = tostring(key)
+        end
+    end
+
+    return table.concat(labels, ', ')
+end
+
 local function clearRouteState()
     state.points = {}
     state.activeSlot = nil
@@ -1428,7 +1456,9 @@ local function showHintText(text, color)
 end
 
 local function showModeHint(source)
-    local text = source == 'blip' and Config.modeHintMissionText or Config.modeHintUserText
+    local text = source == 'blip'
+        and resolveModeHintText('mode.mission', 'modeHintMissionText')
+        or resolveModeHintText('mode.user', 'modeHintUserText')
     showHintText(text, getActiveRouteTint())
 end
 
@@ -1605,10 +1635,10 @@ local function toggleExtraAnimationsShortcut()
     state.geoAnimIntroPlayed = false
 
     if state.extraAnimationsEnabled then
-        playActionFeedback('GPS FX: ON', { r = 90, g = 220, b = 120, a = 220 })
+        playActionFeedback(L('hud.gps_fx_on'), { r = 90, g = 220, b = 120, a = 220 })
     else
         stopGpsGeoAnimations()
-        playActionFeedback('GPS FX: OFF', { r = 255, g = 96, b = 96, a = 220 })
+        playActionFeedback(L('hud.gps_fx_off'), { r = 255, g = 96, b = 96, a = 220 })
     end
 end
 
@@ -1649,33 +1679,33 @@ end
 
 local function describeRouteSource(source)
     if source == 'blip' then
-        return 'MISSION'
+        return L('source.mission')
     end
 
-    return 'USER'
+    return L('source.user')
 end
 
 local function setActiveRouteSource(source, withFeedback, withChat)
     if source ~= 'manual' and source ~= 'blip' then
-        return false, 'Invalid route source.'
+        return false, L('error.invalid_route_source')
     end
 
     if source == 'manual' then
         if Config.routeSources.manual == false then
-            return false, 'Manual route source is disabled.'
+            return false, L('error.manual_disabled')
         end
 
         if not hasManualRouteAvailable() then
-            return false, 'Manual waypoint route is not active.'
+            return false, L('error.manual_not_active')
         end
     elseif source == 'blip' then
         if Config.routeSources.blip ~= true then
-            return false, 'Mission route source is disabled.'
+            return false, L('error.mission_disabled')
         end
 
         refreshExternalTrackedBlip(true)
         if not hasBlipRouteAvailable() then
-            return false, 'Mission blip route is not active.'
+            return false, L('error.mission_not_active')
         end
     end
 
@@ -1694,7 +1724,7 @@ local function setActiveRouteSource(source, withFeedback, withChat)
 
     if withFeedback then
         if withChat ~= false then
-            notify(('ROTA ATIVA: ^3%s^7'):format(describeRouteSource(source)))
+            notify(L('route.active', describeRouteSource(source)))
         end
         if changed then
             playModeSwitchFeedback(source)
@@ -1747,7 +1777,7 @@ local function applyRoutePreset(index, silent)
     local presetIndex = normalizePresetIndex(index)
     local preset = Config.routePresets[presetIndex]
     if not preset then
-        return false, 'Invalid preset.'
+        return false, L('error.invalid_preset')
     end
 
     state.routePresetIndex = presetIndex
@@ -1761,7 +1791,7 @@ local function applyRoutePreset(index, silent)
     end
 
     if not silent then
-        notify(('Preset ^3%d^7 selected: %s'):format(presetIndex, preset.name))
+        notify(L('notify.preset_selected', presetIndex, preset.name))
     end
 
     return true
@@ -1832,7 +1862,7 @@ local function cycleCurrentRouteColor(direction)
         applied = setDefaultRouteColor(entry.color.r, entry.color.g, entry.color.b, entry.color.a)
     end
 
-    playActionFeedback(('GPS COLOR: %s'):format(entry.name or ('#' .. tostring(nextIndex))), applied)
+    playActionFeedback(L('hud.gps_color', entry.name or ('#' .. tostring(nextIndex))), applied)
     return true
 end
 
@@ -1867,7 +1897,7 @@ local function cycleRoutePreset(direction)
     end
 
     local preset = getCurrentPreset()
-    playActionFeedback(('GPS PRESET: %s'):format(preset and preset.name or tostring(nextPresetIndex)), getActiveRouteTint())
+    playActionFeedback(L('hud.gps_preset', preset and preset.name or tostring(nextPresetIndex)), getActiveRouteTint())
     return true
 end
 
@@ -1892,15 +1922,19 @@ local function setGpsEnabledState(enabled, withFeedback, withChat)
 
     if withFeedback then
         if state.enabled then
-            playActionFeedback(state.routeSource == 'blip' and Config.modeHintMissionText or Config.modeHintUserText, getActiveRouteTint())
+            playActionFeedback(
+                state.routeSource == 'blip'
+                    and resolveModeHintText('mode.mission', 'modeHintMissionText')
+                    or resolveModeHintText('mode.user', 'modeHintUserText'),
+                getActiveRouteTint()
+            )
         else
-            playActionFeedback(Config.modeHintOffText or 'GPS MODE: OFF', { r = 255, g = 96, b = 96, a = 220 })
+            playActionFeedback(resolveModeHintText('mode.off', 'modeHintOffText'), { r = 255, g = 96, b = 96, a = 220 })
         end
     end
 
     if withChat ~= false then
-        local message = state.enabled and '^2GPS 3D enabled.^7' or '^1GPS 3D disabled.^7'
-        notify(message)
+        notify(state.enabled and L('notify.gps_enabled') or L('notify.gps_disabled'))
     end
 
     return changed
@@ -1921,7 +1955,7 @@ local function toggleGpsShortcut()
 
     if now < (state.gpsToggleCooldownUntil or 0) then
         local remainingSeconds = math.ceil(((state.gpsToggleCooldownUntil or 0) - now) / 1000.0)
-        playActionFeedback(('GPS COOLDOWN: %ds'):format(math.max(1, remainingSeconds)), { r = 255, g = 180, b = 72, a = 220 })
+        playActionFeedback(L('hud.gps_cooldown', math.max(1, remainingSeconds)), { r = 255, g = 180, b = 72, a = 220 })
         return
     end
 
@@ -1930,7 +1964,7 @@ end
 
 local function setTrackedBlip(blip)
     if not blip or blip == 0 or type(DoesBlipExist) ~= 'function' or not DoesBlipExist(blip) then
-        return false, 'Invalid blip.'
+        return false, L('error.invalid_blip')
     end
 
     local coords = nil
@@ -2092,7 +2126,7 @@ RegisterCommand('gps3d_route', function(_, args)
     if action == 'manual' then
         local ok, errorMessage = setActiveRouteSource('manual', true)
         if not ok then
-            notify(('^1USER route failed:^7 %s'):format(errorMessage or 'unknown error'))
+            notify(L('error.user_route_failed', errorMessage or L('error.unknown')))
         end
         return
     end
@@ -2101,7 +2135,7 @@ RegisterCommand('gps3d_route', function(_, args)
         refreshExternalTrackedBlip(true)
         local ok, errorMessage = setActiveRouteSource('blip', true)
         if not ok then
-            notify(('^1MISSION route failed:^7 %s'):format(errorMessage or 'unknown error'))
+            notify(L('error.mission_route_failed', errorMessage or L('error.unknown')))
         end
         return
     end
@@ -2109,19 +2143,26 @@ RegisterCommand('gps3d_route', function(_, args)
     if action == 'status' then
         refreshExternalTrackedBlip(true)
         local preset = getCurrentPreset()
-        local availableSources = table.concat(getAvailableRouteSources(), ', ')
-        notify(('Source: ^3%s^7 | Preset: ^5%d - %s^7 | Points: %d | Slot: %s | Available: [%s]'):format(
-            describeRouteSource(state.routeSource or 'manual'),
-            state.routePresetIndex or 0,
-            preset and preset.name or 'unknown',
-            #state.points,
-            state.activeSlot ~= nil and tostring(state.activeSlot) or 'none',
-            availableSources ~= '' and availableSources or 'none'
-        ))
+        local presetName = preset and preset.name or L('common.unknown')
+        local slotText = state.activeSlot ~= nil and tostring(state.activeSlot) or L('common.none')
+        local availableText = formatAvailableSourcesForDisplay()
+        if availableText == '' then
+            availableText = L('common.none')
+        end
+
+        local statusLine = table.concat({
+            L('status.source', describeRouteSource(state.routeSource or 'manual')),
+            L('status.preset', state.routePresetIndex or 0, presetName),
+            L('status.points', #state.points),
+            L('status.slot', slotText),
+            L('status.available', availableText),
+        }, ' | ')
+
+        notify(statusLine)
         return
     end
 
-    notify('^3Usage:^7 /gps3d_route manual|blip|toggle|status')
+    notify(L('usage.gps3d_route'))
 end, false)
 
 RegisterCommand('gpspreset', function(_, args)
@@ -2129,7 +2170,7 @@ RegisterCommand('gpspreset', function(_, args)
 
     if action == 'status' then
         local preset = getCurrentPreset()
-        notify(('Preset: ^3%d^7 - %s'):format(state.routePresetIndex or 0, preset and preset.name or 'unknown'))
+        notify(L('status.preset', state.routePresetIndex or 0, preset and preset.name or L('common.unknown')))
         return
     end
 
@@ -2169,12 +2210,12 @@ RegisterCommand('gpspreset', function(_, args)
 
     local requestedIndex = tonumber(action)
     if requestedIndex == nil then
-        notify('^3Usage:^7 /gpspreset index|next|prev|status')
+        notify(L('usage.gpspreset'))
         return
     end
 
     if not applyRoutePreset(requestedIndex, false) then
-        notify('^1Invalid preset index.^7')
+        notify(L('error.invalid_preset_index'))
     end
 end, false)
 
@@ -2183,14 +2224,12 @@ RegisterCommand('gpscolordefault', function(_, args, rawCommand)
     local r, g, b, a = parseColorInput(args, rawCommand)
 
     if r == nil or g == nil or b == nil then
-        notify(('^3Usage:^7 /gpscolordefault r g b [a]^7. Current: rgba(%d, %d, %d, %d)'):format(
-            currentTint.r, currentTint.g, currentTint.b, currentTint.a
-        ))
+        notify(L('usage.gpscolordefault', currentTint.r, currentTint.g, currentTint.b, currentTint.a))
         return
     end
 
     local applied = setDefaultRouteColor(r, g, b, a)
-    notify(('USER color changed to rgba(%d, %d, %d, %d)'):format(applied.r, applied.g, applied.b, applied.a))
+    notify(L('notify.user_color_changed', applied.r, applied.g, applied.b, applied.a))
 end, false)
 
 RegisterCommand('gpscolormission', function(_, args, rawCommand)
@@ -2198,14 +2237,12 @@ RegisterCommand('gpscolormission', function(_, args, rawCommand)
     local r, g, b, a = parseColorInput(args, rawCommand)
 
     if r == nil or g == nil or b == nil then
-        notify(('^3Usage:^7 /gpscolormission r g b [a]^7. Current: rgba(%d, %d, %d, %d)'):format(
-            currentTint.r, currentTint.g, currentTint.b, currentTint.a
-        ))
+        notify(L('usage.gpscolormission', currentTint.r, currentTint.g, currentTint.b, currentTint.a))
         return
     end
 
     local applied = setMissionRouteColor(r, g, b, a)
-    notify(('MISSION color changed to rgba(%d, %d, %d, %d)'):format(applied.r, applied.g, applied.b, applied.a))
+    notify(L('notify.mission_color_changed', applied.r, applied.g, applied.b, applied.a))
 end, false)
 
 --[[

@@ -6,6 +6,8 @@
 
 L2KGpsConfig = {
     -- General
+    -- Locale (used by locale.lua / L() helper). Available: 'en' (default).
+    locale = 'en',
     enabled = true,
     drawWhenOnFoot = false,
     ignoredVehicleClasses = {
