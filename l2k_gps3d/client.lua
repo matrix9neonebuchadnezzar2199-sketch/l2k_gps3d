@@ -110,26 +110,6 @@ local function resolveModeHintText(localeKey, configKey)
     return L(localeKey)
 end
 
-local function formatAvailableSourcesForDisplay()
-    local sources = getAvailableRouteSources()
-    if type(sources) ~= 'table' or #sources == 0 then
-        return ''
-    end
-
-    local labels = {}
-    for _, key in ipairs(sources) do
-        if key == 'manual' then
-            labels[#labels + 1] = L('source.manual')
-        elseif key == 'blip' then
-            labels[#labels + 1] = L('source.blip')
-        else
-            labels[#labels + 1] = tostring(key)
-        end
-    end
-
-    return table.concat(labels, ', ')
-end
-
 local function clearRouteState()
     state.points = {}
     state.activeSlot = nil
@@ -548,6 +528,26 @@ local function getAvailableRouteSources()
     end
 
     return sources
+end
+
+local function formatAvailableSourcesForDisplay()
+    local sources = getAvailableRouteSources()
+    if type(sources) ~= 'table' or #sources == 0 then
+        return ''
+    end
+
+    local labels = {}
+    for _, key in ipairs(sources) do
+        if key == 'manual' then
+            labels[#labels + 1] = L('source.manual')
+        elseif key == 'blip' then
+            labels[#labels + 1] = L('source.blip')
+        else
+            labels[#labels + 1] = tostring(key)
+        end
+    end
+
+    return table.concat(labels, ', ')
 end
 
 local function getCurrentRouteMaxDistance()
