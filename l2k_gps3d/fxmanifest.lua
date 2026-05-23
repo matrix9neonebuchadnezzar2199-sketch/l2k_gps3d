@@ -8,6 +8,7 @@ description '3D GPS ribbon renderer for user waypoint and mission blip routes.'
 version '1.2.0'
 
 shared_scripts {
+    'config.lua',
     'gpsgeoanim.config.lua'
 }
 
